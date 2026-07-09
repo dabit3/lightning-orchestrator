@@ -42,7 +42,7 @@ Install both the skill and its executor profile. They must be installed together
 Install the skill for Devin in the current project:
 
 ```bash
-npx skills add dabit3/lightning-orchestrator --skill lightning --agent devin
+npx skills add dabit3/lightning-orchestrator --agent devin
 ```
 
 The Skills CLI installs `SKILL.md` packages, but not Devin-specific custom agent profiles. Install the required executor separately:
@@ -57,7 +57,7 @@ curl -fsSL \
 For a global installation, add `--global` and place the executor in Devin's global configuration directory:
 
 ```bash
-npx skills add dabit3/lightning-orchestrator --skill lightning --agent devin --global
+npx skills add dabit3/lightning-orchestrator --agent devin --global
 mkdir -p ~/.config/devin/agents/lightning-executor
 curl -fsSL \
   https://raw.githubusercontent.com/dabit3/lightning-orchestrator/main/.devin/agents/lightning-executor/AGENT.md \
