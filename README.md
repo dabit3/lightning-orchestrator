@@ -37,26 +37,49 @@ The skill uses one executor by default to minimize context duplication and cost.
 
 Install both the skill and its executor profile. They must be installed together because the skill explicitly delegates implementation to `lightning-executor`.
 
-### Project installation
+### Skills CLI
 
-Copy the directories into the project where you want to use Lightning:
+Install the skill for Devin in the current project:
+
+```bash
+npx skills add dabit3/lightning-orchestrator --skill lightning --agent devin
+```
+
+The Skills CLI installs `SKILL.md` packages, but not Devin-specific custom agent profiles. Install the required executor separately:
+
+```bash
+mkdir -p .devin/agents/lightning-executor
+curl -fsSL \
+  https://raw.githubusercontent.com/dabit3/lightning-orchestrator/main/.devin/agents/lightning-executor/AGENT.md \
+  -o .devin/agents/lightning-executor/AGENT.md
+```
+
+For a global installation, add `--global` and place the executor in Devin's global configuration directory:
+
+```bash
+npx skills add dabit3/lightning-orchestrator --skill lightning --agent devin --global
+mkdir -p ~/.config/devin/agents/lightning-executor
+curl -fsSL \
+  https://raw.githubusercontent.com/dabit3/lightning-orchestrator/main/.devin/agents/lightning-executor/AGENT.md \
+  -o ~/.config/devin/agents/lightning-executor/AGENT.md
+```
+
+### Manual installation
+
+If you already cloned this repository, copy both directories into your project:
 
 ```bash
 mkdir -p .devin/skills .devin/agents
-cp -R /path/to/devin-orchestrator/.devin/skills/lightning .devin/skills/
-cp -R /path/to/devin-orchestrator/.devin/agents/lightning-executor .devin/agents/
+cp -R /path/to/lightning-orchestrator/.devin/skills/lightning .devin/skills/
+cp -R /path/to/lightning-orchestrator/.devin/agents/lightning-executor .devin/agents/
 ```
 
-Project-scoped configuration can be committed and shared with the rest of the repository.
-
-### Global installation
-
-To make Lightning available in every project, install it in your user configuration directory:
+For a manual global installation, copy them into your user configuration directory:
 
 ```bash
 mkdir -p ~/.config/devin/skills ~/.config/devin/agents
-cp -R /path/to/devin-orchestrator/.devin/skills/lightning ~/.config/devin/skills/
-cp -R /path/to/devin-orchestrator/.devin/agents/lightning-executor ~/.config/devin/agents/
+cp -R /path/to/lightning-orchestrator/.devin/skills/lightning ~/.config/devin/skills/
+cp -R /path/to/lightning-orchestrator/.devin/agents/lightning-executor ~/.config/devin/agents/
 ```
 
 Start a new Devin session after installation so the skill and agent profile are discovered.
