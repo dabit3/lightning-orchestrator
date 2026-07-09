@@ -23,7 +23,7 @@ When you invoke the skill, the orchestrator:
 2. Inspects enough of the repository to resolve material product or architecture questions.
 3. Sends a self-contained work order to the `lightning-executor` subagent.
 4. Reviews the resulting diff and verification evidence against the original request.
-5. Resumes the same executor with targeted feedback if a correction is needed.
+5. Applies trivial fixes directly or resumes the same executor with targeted feedback when a correction is needed.
 6. Reports the completed changes, verification results, and any remaining risks.
 
 The skill uses one executor by default to minimize context duplication and cost. Purely explanatory or read-only requests are handled directly when delegation would not add value.
