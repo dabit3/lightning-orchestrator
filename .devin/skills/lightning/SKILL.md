@@ -92,15 +92,15 @@ Include precise paths and errors when known, reference files by path instead of 
 Use `run_subagent` with:
 
 - `profile: lightning-executor`
-- `is_background: false`
+- `is_background: false` for a single executor; `is_background: true` for each executor when fanning out
 - a short task-specific title
 - the complete work order as the task
 
-Capture the returned agent ID for any corrective continuation. Keep the executor in the foreground so write approvals can be requested and its result returns directly to the current review pipeline.
+Capture each returned agent ID for any corrective continuation. Keep a single executor in the foreground so write approvals can be requested and its result returns directly to the current review pipeline.
 
 Use exactly one executor by default. Do not create speculative planners, researchers, reviewers, or parallel implementations. A single focused SWE-1.7 Lightning session is the standard path because every extra subagent adds cost and context duplication.
 
-Fan out only when the work divides into genuinely independent subtasks with fully disjoint write sets and parallelism would materially reduce wall-clock time, or when the user explicitly requests it. Never allow parallel agents to edit overlapping files.
+Fan out only when the work divides into genuinely independent subtasks with fully disjoint write sets and parallelism would materially reduce wall-clock time, or when the user explicitly requests it. Never allow parallel agents to edit overlapping files. When fanning out, launch all executors as background subagents in a single round so they run concurrently, then collect each result with `read_subagent` and review them individually. Background executors cannot prompt for tool approvals; if one reports denied permissions, resume it in the foreground or fall back to sequential foreground dispatch rather than accepting an incomplete result.
 
 If `lightning-executor` is unavailable, do not silently substitute another model. Report that the custom profile is missing or disabled.
 
