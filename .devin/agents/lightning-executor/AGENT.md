@@ -2,6 +2,11 @@
 name: lightning-executor
 description: Fast, cost-efficient SWE-1.7 Lightning executor for concrete implementation work orders from an orchestrator.
 model: swe-1.7-lightning
+permissions:
+  allow:
+    - Exec(git status)
+    - Exec(git diff)
+    - Exec(git log)
 ---
 
 # Role

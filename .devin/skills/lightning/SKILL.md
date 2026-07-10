@@ -4,6 +4,11 @@ description: Use the active model as a lean planner and reviewer while SWE-1.7 L
 argument-hint: "<software-engineering task>"
 triggers:
   - user
+permissions:
+  allow:
+    - Exec(git status)
+    - Exec(git diff)
+    - Exec(git log)
 ---
 
 # Mission
@@ -31,7 +36,7 @@ Do not trade correctness for token savings, but do not duplicate work between or
 
 Choose the smallest sufficient orchestration path:
 
-- **Clear and low-risk:** perform only a quick repository preflight, then dispatch immediately.
+- **Clear and low-risk:** dispatch in the first tool round, issuing the preflight reads and the `run_subagent` call together in a single round; the executor discovers repository state itself while the captured preflight becomes the review baseline.
 - **Ambiguous or cross-cutting:** inspect just enough code to resolve architecture, scope, and acceptance criteria before dispatching.
 - **High-risk:** explicitly identify compatibility, security, migration, data-loss, and rollback concerns in the work order and verification plan.
 
@@ -49,7 +54,7 @@ Extract:
 - relevant user-provided context
 - required verification
 
-Run the preflight as parallel reads in a single round: working-tree status, applicable repository instructions, and the project manifest or build scripts when validation commands matter. Record pre-existing modified files so they are preserved. Leave routine discovery, such as locating adjacent tests and local implementation patterns, to the executor, but pass everything the preflight already established into the work order so it is not rediscovered. Resolve product semantics, API compatibility, cross-system boundaries, and migration or safety decisions before dispatch when they affect the work order.
+Run the preflight as parallel reads in a single round: working-tree status, applicable repository instructions, and the project manifest or build scripts when validation commands matter. Record pre-existing modified files so they are preserved. Leave routine discovery, such as locating adjacent tests and local implementation patterns, to the executor. On the clear and low-risk path, issue the preflight reads in the same round as the dispatch: the executor independently discovers working-tree state and repository instructions, and the captured results serve as the review baseline. On any other path, run the preflight before dispatch and pass everything it established into the work order so it is not rediscovered. Resolve product semantics, API compatibility, cross-system boundaries, and migration or safety decisions before dispatch when they affect the work order.
 
 ## 2. Create a self-contained work order
 
@@ -70,7 +75,7 @@ CONSTRAINTS / NON-GOALS
 
 KNOWN CONTEXT
 - <relevant paths, symbols, conventions, existing failures, or decisions>
-- <pre-existing modified files to leave untouched>
+- <pre-existing modified files to leave untouched, when captured before dispatch>
 
 EXECUTION
 - Inspect the relevant code and repository instructions.
@@ -85,7 +90,7 @@ RETURN
 - Status, files changed, verification run with outcomes, and any residual risks or blockers.
 ```
 
-Include precise paths and errors when known, reference files by path instead of pasting their contents, and summarize noisy logs rather than copying irrelevant context. State what success looks like; do not micromanage implementation that repository conventions can determine.
+Include precise paths and errors when known, reference files by path instead of pasting their contents, and summarize noisy logs rather than copying irrelevant context. State what success looks like; do not micromanage implementation that repository conventions can determine. When a required suite is long-running, scope the executor's validation to focused checks and reserve the suite for review, where it runs in the background while the diff is inspected.
 
 ## 3. Dispatch economically
 
@@ -108,11 +113,11 @@ If `lightning-executor` is unavailable, do not silently substitute another model
 
 Treat the executor's report as evidence, not proof. After it returns:
 
-1. Inspect the working-tree status and complete diff.
+1. Inspect the working-tree status and complete diff, issuing both as parallel calls in one round. When the executor's report alone already establishes that an independent check is required, launch that check in the same round.
 2. Check the change against every acceptance criterion.
 3. Look for scope creep, unrelated refactors, dependency churn, accidental deletion, security issues, and mishandled pre-existing changes.
 4. Confirm targeted verification actually ran and passed.
-5. Run an additional targeted check only when the executor's evidence is missing or inadequate, or when change risk requires an independent signal. Run broad suites only when risk or repository instructions justify their cost.
+5. Run an additional targeted check only when the executor's evidence is missing or inadequate, or when change risk requires an independent signal. Run broad suites only when risk or repository instructions justify their cost, starting them as background commands so the diff review proceeds while they run.
 
 Scale review depth to the change: read small diffs in full; for large diffs, prioritize hunks that affect interfaces, data handling, security, and the acceptance criteria. Thoroughness should improve confidence, not expand scope.
 

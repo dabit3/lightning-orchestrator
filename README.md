@@ -26,7 +26,7 @@ When you invoke the skill, the orchestrator:
 5. Applies trivial fixes directly or resumes the same executor with targeted feedback when a correction is needed.
 6. Reports the completed changes, verification results, and any remaining risks.
 
-The skill uses one executor by default to minimize context duplication and cost. Purely explanatory or read-only requests are handled directly when delegation would not add value.
+The skill uses one executor by default to minimize context duplication and cost. For clear, low-risk tasks the preflight reads are issued in the same round as the dispatch, review reads are batched the same way, and long-running suites run in the background during diff review — keeping orchestrator overhead off the critical path. Purely explanatory or read-only requests are handled directly when delegation would not add value.
 
 ## Requirements
 
@@ -116,6 +116,23 @@ Lightning is designed to:
 - avoid unrelated refactors, dependencies, generated files, and documentation
 
 If the custom executor profile is unavailable, Lightning stops and reports the missing profile rather than silently switching to another model.
+
+## Permissions
+
+Both definitions pre-approve the read-only inspection commands on the critical path — `git status`, `git diff`, and `git log` — so fresh sessions do not stall on approval prompts just to inspect repository state. Writes, edits, and all other commands follow your normal approval flow.
+
+To remove per-edit approval prompts entirely — and to let background fan-out executors edit files without a foreground resume — opt in by adding `edit` to the executor's allowed permissions in `.devin/agents/lightning-executor/AGENT.md`:
+
+```yaml
+permissions:
+  allow:
+    - Exec(git status)
+    - Exec(git diff)
+    - Exec(git log)
+    - edit
+```
+
+Only enable this if you are comfortable with the executor editing files without prompting.
 
 ## Repository structure
 
