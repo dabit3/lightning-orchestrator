@@ -28,6 +28,14 @@ When you invoke the skill, the orchestrator:
 
 The skill uses one executor by default to minimize context duplication and cost. For clear, low-risk tasks the preflight reads are issued in the same round as the dispatch, review reads are batched the same way, and long-running suites run in the background during diff review — keeping orchestrator overhead off the critical path. Purely explanatory or read-only requests are handled directly when delegation would not add value.
 
+Three further optimizations keep handoff overhead in check:
+
+- **Trivial edits skip delegation.** Every handoff has a roughly fixed coordination cost — the work order and report are each written by one side and read by the other — so a few clearly understood, low-risk lines are edited directly instead of being routed through an executor.
+- **Follow-up work resumes the same executor.** Resuming keeps the executor's accumulated repository context and prompt cache warm, so later work orders skip rediscovery instead of re-paying a cold start.
+- **Long exploratory tasks get steering checkpoints.** Instead of one open-ended order, the work is split into milestone-scoped resumes with a review between each, so unproductive directions are caught early rather than after a long run.
+
+When fanning out to parallel executors, the orchestrator embeds its already-established shared context (build commands, conventions, key paths) into every work order, since parallel workers cannot see each other's discoveries and would otherwise repeat the same research.
+
 ## Requirements
 
 - Devin with support for project skills and custom subagent profiles

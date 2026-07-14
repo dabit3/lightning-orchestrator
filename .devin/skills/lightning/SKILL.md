@@ -28,14 +28,17 @@ Do not trade correctness for token savings, but do not duplicate work between or
 # When to delegate
 
 - For tasks that require editing files, running implementation commands, or fixing code, delegate the implementation to `lightning-executor`.
+- Every handoff carries a roughly fixed coordination cost: the work order and the report are each written by one side and read by the other, and the executor repeats some discovery. Delegate when the implementation tokens the executor absorbs clearly outweigh that cost.
+- Implement directly, without an executor, when the complete change is already understood and amounts to a few low-risk lines in one or two files already inspected — for such edits the handoff costs more in latency and tokens than the change itself.
 - For a pure explanation, recommendation, or read-only question, answer directly when an executor would add no value.
 - If no actionable task was supplied, ask for the task and stop.
-- Keep implementation in the executor role. The orchestrator may inspect files, search, review diffs, and run independent verification, and may apply trivial post-review corrections as described in "Correct efficiently".
+- Keep all larger implementation in the executor role. The orchestrator may inspect files, search, review diffs, and run independent verification, and may apply trivial edits as described above and in "Correct efficiently".
 
 # Effort routing
 
 Choose the smallest sufficient orchestration path:
 
+- **Trivial:** the full change is already understood, spans a few low-risk lines in known files, and needs no discovery — edit directly, run the targeted check, and skip delegation entirely.
 - **Clear and low-risk:** dispatch in the first tool round, issuing the preflight reads and the `run_subagent` call together in a single round; the executor discovers repository state itself while the captured preflight becomes the review baseline.
 - **Ambiguous or cross-cutting:** inspect just enough code to resolve architecture, scope, and acceptance criteria before dispatching.
 - **High-risk:** explicitly identify compatibility, security, migration, data-loss, and rollback concerns in the work order and verification plan.
@@ -90,7 +93,7 @@ RETURN
 - Status, files changed, verification run with outcomes, and any residual risks or blockers.
 ```
 
-Include precise paths and errors when known, reference files by path instead of pasting their contents, and summarize noisy logs rather than copying irrelevant context. State what success looks like; do not micromanage implementation that repository conventions can determine. When a required suite is long-running, scope the executor's validation to focused checks and reserve the suite for review, where it runs in the background while the diff is inspected.
+Every token that crosses the orchestrator-executor boundary is paid twice — written by one side, read by the other — so include precise paths and errors when known, reference files by path instead of pasting their contents, and summarize noisy logs rather than copying irrelevant context. State what success looks like; do not micromanage implementation that repository conventions can determine. When a required suite is long-running, scope the executor's validation to focused checks and reserve the suite for review, where it runs in the background while the diff is inspected.
 
 ## 3. Dispatch economically
 
@@ -101,11 +104,13 @@ Use `run_subagent` with:
 - a short task-specific title
 - the complete work order as the task
 
-Capture each returned agent ID for any corrective continuation. Keep a single executor in the foreground so write approvals can be requested and its result returns directly to the current review pipeline.
+Capture each returned agent ID. Reuse it not only for corrective continuations but also for follow-up work orders later in the session: `resume` keeps the executor's accumulated repository context and prompt cache warm, so follow-up handoffs skip rediscovery and cost less than a cold start. Start a fresh executor only when the prior transcript is long and mostly irrelevant to the new task. Keep a single executor in the foreground so write approvals can be requested and its result returns directly to the current review pipeline.
 
 Use exactly one executor by default. Do not create speculative planners, researchers, reviewers, or parallel implementations. A single focused SWE-1.7 Lightning session is the standard path because every extra subagent adds cost and context duplication.
 
-Fan out only when the work divides into genuinely independent subtasks with fully disjoint write sets and parallelism would materially reduce wall-clock time, or when the user explicitly requests it. Never allow parallel agents to edit overlapping files. When fanning out, launch all executors as background subagents in a single round so they run concurrently, then collect each result with `read_subagent` and review them individually. Background executors cannot prompt for tool approvals; if one reports denied permissions, resume it in the foreground or fall back to sequential foreground dispatch rather than accepting an incomplete result.
+Fan out only when the work divides into genuinely independent subtasks with fully disjoint write sets and parallelism would materially reduce wall-clock time, or when the user explicitly requests it. Never allow parallel agents to edit overlapping files. Parallel executors cannot see each other's discoveries, so put the shared context the orchestrator has already established — build and validation commands, conventions, key paths, and the ownership split — into every work order; otherwise each worker re-pays the same research. When fanning out, launch all executors as background subagents in a single round so they run concurrently, then collect each result with `read_subagent` and review them individually. Background executors cannot prompt for tool approvals; if one reports denied permissions, resume it in the foreground or fall back to sequential foreground dispatch rather than accepting an incomplete result.
+
+For long-horizon or exploratory work — iterative debugging, performance tuning, or multi-stage migrations where each result reshapes the next step — do not dispatch one open-ended order. Split the task into milestone-scoped work orders resumed on the same executor, and review between milestones to re-rank what is worth doing next. A fast executor left unsupervised tends to hill-climb on marginal gains; an early steering checkpoint costs one review and saves a long unproductive run. Judgment scattered across such a task outperforms judgment front-loaded into the initial plan.
 
 If `lightning-executor` is unavailable, do not silently substitute another model. Report that the custom profile is missing or disabled.
 
