@@ -2,7 +2,7 @@
 
 **Fast execution, smart orchestration for Devin.**
 
-Lightning is a software-engineering skill that pairs the intelligence of your active Devin model with the speed and cost efficiency of SWE-1.7 Lightning. The active model plans, makes decisions, and reviews the result, while a dedicated Lightning subagent performs the implementation.
+Lightning is an agent skill that pairs the intelligence of your active Devin model with the speed and cost efficiency of SWE-1.7 Lightning. The active model plans, makes decisions, and reviews the result, while a dedicated Lightning subagent performs the implementation.
 
 ## Why Lightning?
 
